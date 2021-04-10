@@ -1,0 +1,7 @@
+awscli==1.19.44
+boto3==1.17.44
+botocore
+click==7.1.2
+Flask==1.1.2
+gunicorn==20.1.0
+sagemaker==2.32.1
