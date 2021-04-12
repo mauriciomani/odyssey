@@ -15,7 +15,7 @@ setup(
         [console_scripts]
         odyssey=odyssey.cli:cli
     ''',
-    version='0.1.0',
+    version='0.0.1',
     description='Cloud Machine Learning using AWS, Azure, GCP, etc. Just needed train and serve scripts.',
     author='mauriciomani',
     license='MIT',

@@ -44,7 +44,7 @@ def cli(ctx, instance, count, role, name):
         count = 1
     if instance == None:
         # Since it is the smallest one
-        instance = "ml.m5-large"
+        instance = "ml.m5.large"
     if name == None:
         name = os.path.basename(os.getcwd())
         click.echo("Image name not provided, then will be used: " + click.style(name, bold=True))
@@ -108,5 +108,36 @@ def batch_transform(ctx, content_type, split_type, output, model, input, strateg
                                     instance_type = ctx.obj.instance,
                                     output_path = output)
 
-    transformer.transform(input, content_type = content_type, split_type=split_type)                   
+    transformer.transform(input, content_type = content_type, split_type=split_type)      
+
+
+# Kindly add more arguments
+@cli.command()
+@click.option("--endpoint-name", type=str, help="Name to give to the endpoint")
+@click.option("-m", "--model", type=str, help="Model artifact. Has to be all the s3 path")
+@click.pass_context
+def serve(ctx, model, endpoint_name):
+    """
+    Perform a sagemaker batch transform. 
+    It is important that instance_count and instance_type is brought befor batch_transform.
+    If split-type not selected the Line as default.
+    If content-type not selected used text/csv.
+    If strategy not selected used MultiRecord.
+    """
+    if endpoint_name == None:
+        endpoint_name = ctx.obj.name
+
+    # Sagemaker model object can receive a parameter for model name, call name.
+    model_name = model[model.find("model/") + 6 : model.find("/output")]
+    # print("Name of the model is {}".format(model_name))
     
+    model = sage.model.Model(ctx.obj.image, 
+                             model_data=model,
+                             role=ctx.obj.role, 
+                             sagemaker_session=ctx.obj.session)
+
+    model.deploy(initial_instance_count=ctx.obj.count,
+                 instance_type=ctx.obj.instance,
+                 endpoint_name=endpoint_name)                  
+    
+    click.echo("Model successfully deployed with name {}!".format(endpoint_name))
