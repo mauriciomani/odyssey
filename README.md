@@ -8,8 +8,8 @@
 [![Package Status](https://img.shields.io/badge/status-dev-success)](https://github.com/mauriciomani/odyssey)
 
 <br>
-Odyssey makes super easy predicting either a single element or a whole file. We aim to be "cloud agnostic", however currently only working on Sagemaker (endpoint deployment and batch-transform).
-This is as simple as Cookiecooter command line file making, combined with AWS bring your own to **easily deploy machine learning models**.
+Odyssey makes super easy predicting either a single element or a whole file. We aim to be "cloud agnostic", however currently only working on Sagemaker (endpoint deployment and batch-transform) and currently working on serverless AWS lambda's.
+This is as simple as Cookiecooter command line file making, combined with AWS bring your own to easily deploy machine learning models. Yeah, we are a command line tool!
 <br>
 It is as simple as:
 
@@ -86,4 +86,6 @@ Kindly visit our examples path to check how to implement odyssey for Sagemaker b
 
 
 ### Next Steps
-* Train lambda locally 
+* Create test for locally, docker and cloud in sagemaker.
+* Improve Sagemaker endpoint (docker & architecture)
+* Train lambda locally .
