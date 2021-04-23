@@ -1,25 +1,35 @@
 import click
-import os 
+import os
 import subprocess
 
 
+# Consider using default
 @click.group()
-@click.option("-n", "--name", type=str, help="Select image name to push to ECR for AWS")
+@click.option("-n",
+              "--name",
+              type=str,
+              help="Select image name to push to ECR for AWS")
 @click.pass_context
 def cli(ctx, name):
     """
     Use docker to train and serve.
-    I kindly recommend you first locally train and test. 
+    I kindly recommend you first locally train and test.
     Remember that once you push you are already in aws.
     In order to do this kindly run 'odyssey train' and 'odyssey serve'.
     """
     list_files = os.listdir()
-    if "rocket" not in list_files or "train.py" not in list_files or "serve.py" not in list_files or "Dockerfile" not in list_files:
-        raise("You are not inside an odyssey app. Kindly change path.")
-    if name == None:
+    if "Dockerfile" not in list_files:
+    #if "rocket" not in list_files or "train.py" not in list_files or "serve.py" not in list_files or "Dockerfile" not in list_files:
+        click.echo("You are " 
+                   + click.style("not inside an odyssey app. ", bold=True)
+                   + "Kindly change the path.")
+        quit()
+
+    if name is None:
         # The name given to the bruce app (parent folder name)
         ctx.obj = os.path.basename(os.getcwd())
-        click.echo("Name of Image not provided, then will be used: " + click.style(ctx.obj, bold=True))
+        click.echo("Name of Image not provided, then will be used: "
+                   + click.style(ctx.obj, bold=True))
     else:
         ctx.obj = name
 
@@ -42,10 +52,10 @@ def push(ctx):
     If not allowed then kindly use odyssey configure.
     """
     account = subprocess.getoutput('account=$(aws sts get-caller-identity --query Account --output text); echo $account')
-    click.echo("Uploading container to ".format(account))
+    click.echo("Uploading container to {}".format(account))
     region = subprocess.getoutput('region=$(aws configure get region); region=${region:-us-west-2}; echo $region')
-    click.echo("Uploading container to".format(region))
-    fullname = '{account}.dkr.ecr.{region}.amazonaws.com/{image}:latest'.format(account = account, region = region, image = ctx.obj)
+    click.echo("Uploading container to {}".format(region))
+    fullname = '{account}.dkr.ecr.{region}.amazonaws.com/{image}:latest'.format(account=account, region=region, image=ctx.obj)
     check_repository = subprocess.getoutput('aws ecr describe-repositories --repository-names "{}" > /dev/null 2>&1; echo $?'.format(ctx.obj))
     if check_repository != 0:
         os.system('aws ecr create-repository --repository-name "{}" > /dev/null'.format(ctx.obj))

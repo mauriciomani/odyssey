@@ -40,12 +40,12 @@ def cli(ctx, instance, count, role, name):
     output
     In case you are deploying and endpoint, output is not necessary.
     """
-    if count == None:
+    if count is None:
         count = 1
-    if instance == None:
+    if instance is None:
         # Since it is the smallest one
         instance = "ml.m5.large"
-    if name == None:
+    if name is None:
         name = os.path.basename(os.getcwd())
         click.echo("Image name not provided, then will be used: " + click.style(name, bold=True))
     ctx.obj = CloudInfo(instance, role, name, count)

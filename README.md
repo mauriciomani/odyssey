@@ -2,8 +2,10 @@
 <img src="resources/rocket.jpg" alt="rocket" width="400"/>
 </p>
 
+-----------------
 
 # Odyssey - Cloud Machine Learning
+[![Package Status](https://img.shields.io/badge/status-dev-success)](https://github.com/mauriciomani/odyssey)
 Odyssey makes super easy predicting either a single element or a whole file. We aim to be "cloud agnostic", however currently only working on Sagemaker (endpoint deployment and batch-transform).
 This is as simple as Cookiecooter command line file making, combined with AWS bring your own to **easily deploy machine learning models**.
 <br>
@@ -77,8 +79,9 @@ Odyssey creates one very important folder where all the magic happens: the **roc
 **Again, it is strongly suggested not to modify anything, except for train.py and serve.py (outside of rocket), unless you know what you are doing**.
 
 
-#### Examples
+### Examples
 Kindly visit our examples path to check how to implement odyssey for Sagemaker batch-transform and endpoint deployment.
 
 
-#### Next Steps
+### Next Steps
+* Train lambda locally 

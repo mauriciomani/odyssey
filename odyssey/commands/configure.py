@@ -10,8 +10,7 @@ def cli(ctx, provider):
     """
     Use the 'aws configure' inside odyssey.
     Using this command is not necessary you can use aws confugure.
-    From pip installed awscli from:
-    https://docs.aws.amazon.com/cli/latest/userguide/install-linux.html#install-linux-pip 
+    From pip installed awscli
     """
-    if provider == "aws" or provider == None:
+    if provider == "aws" or provider is None:
         os.system("aws configure")
