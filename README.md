@@ -6,6 +6,8 @@
 
 # Odyssey - Cloud Machine Learning
 [![Package Status](https://img.shields.io/badge/status-dev-success)](https://github.com/mauriciomani/odyssey)
+
+<br>
 Odyssey makes super easy predicting either a single element or a whole file. We aim to be "cloud agnostic", however currently only working on Sagemaker (endpoint deployment and batch-transform).
 This is as simple as Cookiecooter command line file making, combined with AWS bring your own to **easily deploy machine learning models**.
 <br>
