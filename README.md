@@ -22,7 +22,7 @@ $ odyssey docker -n testapp build
 $ odyssey docker -n testapp push
 $ odyssey sagemaker -r arn:aws:iam::__rolename__:role/sagemaker_role -n testapp train -i s3://testapp/app_folder/input/data/training/iris.data -m s3://testapp/app_folder/model/
 
-$odyssey sagemaker -r arn:aws:iam::__rolename__:role/sagemaker_role -n testapp serve -m s3://testapp/app_folder/model/testapp-timestamp/output/model.tar.gz --endpoint-name testapp
+$ odyssey sagemaker -r arn:aws:iam::__rolename__:role/sagemaker_role -n testapp serve -m s3://testapp/app_folder/model/testapp-timestamp/output/model.tar.gz --endpoint-name testapp
 
 $ odyssey sagemaker -r arn:aws:iam::__rolename__:role/sagemaker_role -n testapp batch-transform -m s3://testapp/app_folder/model/testapp-timestamp/output/model.tar.gz -o s3://testapp/app_folder/output/ -i s3://testapp/app_folder/input/data/iris.csv
 ```
