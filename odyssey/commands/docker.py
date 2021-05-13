@@ -1,6 +1,8 @@
 import click
 import os
 import subprocess
+import requests
+import json
 
 
 # Consider using default
@@ -81,4 +83,28 @@ def serve(ctx):
     """
     Serve the trained model inside the container.
     """
-    os.system("docker run -v $(pwd):/opt/ml --rm {} rocket/serve".format(ctx.obj))
+    # docker inspect <containerNameOrId>
+    os.system("docker run -p 8080:8080 -v $(pwd):/opt/ml --rm {} rocket/serve".format(ctx.obj))
+
+
+@cli.command()
+@click.pass_context
+@click.option("--data",
+              type=str,
+              help="Information to send to locally created endpoint")
+@click.option("--url",
+              type=str,
+              help="Information to send to locally created endpoint",
+              default="127.0.0.1:8080")
+def request(ctx, data, url):
+    """
+    This to request docker serve.
+    Once you have odyssey docker train
+    and odyssey docker serve open another terminal
+    and you can test the endpoint.
+    You can also use odyssey local request
+    """
+    r = requests.post(url="http://" + url + "/invocations",
+                      json=json.loads(data))
+    click.echo(r.text)
+

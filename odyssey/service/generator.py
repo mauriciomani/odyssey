@@ -23,6 +23,11 @@ class Generator():
         We keep the input/data/training; model; output currently.
         """
         self.app_name = input("1. Name of app: ")
+        if self.app_name.find("_"):
+            print("Strongly recommend to use '-' instead of '_'.")
+            retry = input("Retry [Y/N]:[N] ")
+            if retry == None or retry == "N":
+                self.app_name = input("1. Name of app: ")
         os.mkdir(self.app_name)
         if self.provider == "aws":
             os.mkdir(os.path.join(self.app_name, "input"))
@@ -36,14 +41,17 @@ class Generator():
                 print("Making progress already! Kindly fill the information provided. You can change this later. You can always pass.")
                 # Consider adding a wrapper
                 self.bucket = input("2. Name of Bucket: ")
-                if self.bucket == "":
-                    self.bucket = '""'
+                self.bucket = '"' + self.bucket + '"'
+                #if self.bucket == "":
+                #    self.bucket = '""'
                 self.data_path = input("3. Input data path [do not add the bucket]: ") 
-                if self.data_path == "":
-                    self.data_path = '""'
+                self.data_path = '"' + self.data_path + '"'
+                #if self.data_path == "":
+                #    self.data_path = '""'
                 self.model_path = input("4. Model path [do not add the bucket]: ")
-                if self.model_path == "":
-                    self.model_path = '""'
+                self.model_path = '"' + self.model_path + '"'
+                #if self.model_path == "":
+                #    self.model_path = '""'
                 self.generate_lambda_aws()
             elif self.service == "ec2":
                 pass
@@ -65,7 +73,7 @@ class Generator():
             script_name = "app.py"
             save_path = os.path.join(self.app_name, script_name)
             # This very complicated
-            script = 'import json\nimport pickle\nimport boto3\n\n\ndef train(event, context):\n    """\n    This function trains a particular ML problem.\n    It can be useful for a daily training.\n    The pickle model is sabed in particular model path inside given bucket.\n    Parameters\n    ----------\n    event : json\n        Carries the input parameter\n    context : json\n        Provides methods and properties about invocation, function and execution of lambda.\n\n    Returns\n    -------\n    None\n    """\n    session = boto3.session.Session()\n    s3_resource = session.client("s3")\n    # No need to use event or context. Do not remove.\n    bucket = {bucket}\n    # This includes the name of the input file \n    data_path = {dp}\n    # Can use response body if using pandas you do not need to read\n    #response = s3_resource.get_object(Bucket=bucket, Key=data_path)\n    # No need to add bucket\n    model_path = {mp}\n    #binary_model = pickle.dumps(model_object)\n    #s3_resource.put_object(Bucket=bucket, Key=model_path, Body=binary_model)\n\n\ndef serve(event, context):\n    """\n    This function saves the model from train inside tmp.\n    Load it and use it to predict from event parameter input.\n    Finally returns prediction.\n    Parameters\n    ----------\n    event : json\n        Carries the input parameter\n    context : json\n        Provides methods and properties about invocation, function and execution of lambda.\n\n    Returns\n    -------\n    json\n        Kindly change the format if needed\n    """\n    # This function uses event, however most sure you will not be using context.\n    s3 = boto3.client("s3")\n    # Kindly add the model_name as well\n    model_path = {mp}\n'.format(bucket=self.bucket, dp=self.data_path, mp=self.model_path) + '    model_name = model_path.split("/")[-1]\n    temp_file_path = "/tmp/" + model_name\n    #s3.download_file(bucket, model_path, temp_file_path)\n    #with open(temp_file_path, "rb") as f:\n    #    model = pickle.load(f)\n\n    # Kindy use event as the input of the lambda function\n    # Be aware data needs to be preprocessed and most sure comes from event.\n    #predictions = model.predict(data)\n    #output = {"prediction": int(predictions[0])}\n    #output = json.dumps(output)\n    #return(output)\n'
+            script = 'import json\nimport pickle\nimport boto3\n\n\ndef train(event, context):\n    """\n    This function trains a particular ML problem.\n    It can be useful for a daily training.\n    The pickle model is sabed in particular model path inside given bucket.\n    Parameters\n    ----------\n    event : json\n        Carries the input parameter\n    context : json\n        Provides methods and properties about invocation, function and execution of lambda.\n\n    Returns\n    -------\n    None\n    """\n    session = boto3.session.Session()\n    s3_resource = session.client("s3")\n    # No need to use event or context. Do not remove.\n    bucket = {bucket}\n    # This includes the name of the input file \n    data_path = {dp}\n    # Can use response body if using pandas you do not need to read\n    #response = s3_resource.get_object(Bucket=bucket, Key=data_path)\n    # No need to add bucket\n    model_path = {mp}\n    #binary_model = pickle.dumps(model_object)\n    #s3_resource.put_object(Bucket=bucket, Key=model_path, Body=binary_model)\n\n\ndef serve(event, context):\n    """\n    This function saves the model from train inside tmp.\n    Load it and use it to predict from event parameter input.\n    Finally returns prediction.\n    Parameters\n    ----------\n    event : json\n        Carries the input parameter\n    context : json\n        Provides methods and properties about invocation, function and execution of lambda.\n\n    Returns\n    -------\n    json\n        Kindly change the format if needed\n    """\n    # This function uses event, however most sure you will not be using context.\n    s3 = boto3.client("s3")\n    bucket = {bucket}\n    # Kindly add the model_name as well\n    model_path = {mp}\n'.format(bucket=self.bucket, dp=self.data_path, mp=self.model_path) + '    model_name = model_path.split("/")[-1]\n    temp_file_path = "/tmp/" + model_name\n    #s3.download_file(bucket, model_path, temp_file_path)\n    #with open(temp_file_path, "rb") as f:\n    #    model = pickle.load(f)\n\n    # Kindy use event as the input of the lambda function\n    # Be aware data needs to be preprocessed and most sure comes from event.\n    #predictions = model.predict(data)\n    #output = {"prediction": int(predictions[0])}\n    #output = json.dumps(output)\n    #return(output)\n'
             f = open(save_path, "w")
             f.write(script)
             f.close()

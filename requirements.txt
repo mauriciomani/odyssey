@@ -4,4 +4,5 @@ botocore
 click==7.1.2
 Flask==1.1.2
 gunicorn==20.1.0
+requests==2.25.1
 sagemaker==2.32.1

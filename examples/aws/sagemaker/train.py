@@ -30,7 +30,7 @@ def train(input_path, model_path, param_path=None):
     """
     data_path = os.path.join(input_path, "iris.data")
     df = pd.read_csv(data_path, names=["sepal_length", "sepal_width", "petal_length", "petal_width", "target"])
-    df.replace({"Iris-setosa": 1, "Iris-versicolor": 2, "Iris-virginica": 3}, inplace = True)
+    df.replace({"Iris-setosa": 1, "Iris-versicolor": 2, "Iris-virginica": 3}, inplace=True)
     X = df.iloc[:, :4]
     y = df.target
     lr = LogisticRegression().fit(X, y)
@@ -38,4 +38,3 @@ def train(input_path, model_path, param_path=None):
     model_path = os.path.join(model_path, "logistic_regression.pkl")
     pickle.dump(lr, open(model_path, "wb"))
     logging.info("Model saved")
-    

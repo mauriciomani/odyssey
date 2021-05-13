@@ -3,6 +3,7 @@ import os
 import boto3
 from sagemaker import get_execution_role
 import sagemaker as sage
+from datetime import datetime
 
 
 # We can add logic here to upload data to s3 as well
@@ -23,6 +24,10 @@ class CloudInfo:
         self.account =  self.session.boto_session.client('sts').get_caller_identity()['Account']
         self.region = self.session.boto_session.region_name
         self.image = '{}.dkr.ecr.{}.amazonaws.com/{}:latest'.format(self.account, self.region, self.name)
+        if self.name.find("_") >= 0:
+            self.base_job_name = self.name.replace("_", "-")
+        else:
+            self.base_job_name = None
 
 
 @click.group()
@@ -69,7 +74,9 @@ def train(ctx, input, model):
                                      instance_type=ctx.obj.instance,
                                      output_path=model,
                                      sagemaker_session=ctx.obj.session,
-                                     disable_profiler=True)
+                                     disable_profiler=True,
+                                     base_job_name=ctx.obj.base_job_name)
+
     model.fit(input)
 
 
@@ -99,16 +106,25 @@ def batch_transform(ctx, content_type, split_type, output, model, input, strateg
     model_name = model[model.find("model/") + 6 : model.find("/output")]
     # print("Name of the model is {}".format(model_name))
     
+    if ctx.obj.name.find("_") >= 0:
+        job_name = ctx.obj.name.replace("_", "-") + "-" + datetime.utcnow().strftime("%d-%m-%Y-%H-%M-%S")
+    else:
+        job_name = None
+
     model = sage.model.Model(ctx.obj.image, 
                              model_data=model,
                              role=ctx.obj.role, 
-                             sagemaker_session=ctx.obj.session)
+                             sagemaker_session=ctx.obj.session, 
+                             name=job_name)
     
-    transformer = model.transformer(instance_count = ctx.obj.count,
-                                    instance_type = ctx.obj.instance,
-                                    output_path = output)
+    transformer = model.transformer(instance_count=ctx.obj.count,
+                                    instance_type=ctx.obj.instance,
+                                    output_path=output)
 
-    transformer.transform(input, content_type = content_type, split_type=split_type)      
+    transformer.transform(input,
+                          content_type=content_type,
+                          split_type=split_type,
+                          job_name=job_name)
 
 
 # Kindly add more arguments
@@ -125,7 +141,14 @@ def serve(ctx, model, endpoint_name):
     If strategy not selected used MultiRecord.
     """
     if endpoint_name == None:
-        endpoint_name = ctx.obj.name
+        endpoint_name = ctx.obj.name.replace("_", "-")
+        click.echo("Endpoint name has been replaced '_' for '-'")
+
+    # Probably creating a function might be smarter
+    if ctx.obj.name.find("_") >= 0:
+        job_name = ctx.obj.name.replace("_", "-") + "-" + datetime.utcnow().strftime("%d-%m-%Y-%H-%M-%S")
+    else:
+        job_name = None
 
     # Sagemaker model object can receive a parameter for model name, call name.
     model_name = model[model.find("model/") + 6 : model.find("/output")]
@@ -134,7 +157,8 @@ def serve(ctx, model, endpoint_name):
     model = sage.model.Model(ctx.obj.image, 
                              model_data=model,
                              role=ctx.obj.role, 
-                             sagemaker_session=ctx.obj.session)
+                             sagemaker_session=ctx.obj.session,
+                             name=job_name)
 
     model.deploy(initial_instance_count=ctx.obj.count,
                  instance_type=ctx.obj.instance,

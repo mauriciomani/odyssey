@@ -8,10 +8,12 @@
 [![Package Status](https://img.shields.io/badge/status-dev-success)](https://github.com/mauriciomani/odyssey)
 
 <br>
-Odyssey makes super easy predicting either a single element or a whole file. We aim to be "cloud agnostic", however currently only working on Sagemaker (endpoint deployment and batch-transform) and currently working on serverless AWS lambda's.
+Odyssey makes super easy predicting either a single element or a whole file. We aim to be "cloud agnostic", however currently only working on Sagemaker (endpoint deployment and batch-transform) and working on improving serverless AWS lambda's.
 This is as simple as Cookiecooter command line file making, combined with AWS bring your own to easily deploy machine learning models. Yeah, we are a command line tool!
 <br>
-It is as simple as:
+
+## AWS Sagemaker
+For AWS Sagemaker it is as simple as:
 
 ```
 $ pip install git+https://github.com/mauriciomani/odyssey.git
@@ -27,7 +29,7 @@ $ odyssey sagemaker -r arn:aws:iam::__rolename__:role/sagemaker_role -n testapp 
 $ odyssey sagemaker -r arn:aws:iam::__rolename__:role/sagemaker_role -n testapp batch-transform -m s3://testapp/app_folder/model/testapp-timestamp/output/model.tar.gz -o s3://testapp/app_folder/output/ -i s3://testapp/app_folder/input/data/iris.csv
 ```
 
-The **p** argument stands for the cloud provider and the **s** for the service. Be aware that the service needs to be a service provided by the cloud provider. You will need to name your app, for example testapp. Inside the created folder kindly add the train and serve logic, under the train.py and serve.py. Then you have to build the docker image, kindly add the requierements under the requierements file provided (be aware that if you pip freeze to add the requierements remove the odyssey library since it is not necessary), the **n** argument is optional and if not provided the name of the app will be used. Then you need to add **input/data/training** path under a given folder inside any wanted bucket, plus **model** and **output** folder (output only if considering multiple observations). Inside training, kindly provide the data for training. That is all you have to do inside s3, plus use **odyssey configure** that is only an aws configure implementation, for more information regarding IAM roles, please look under **Cloud Permissions**. Then push the docker image, after that you can train inside sagemaker, you can provide the **number, c** of instances and the **type, in** of instances, you will need to provide the **role**, the **name, n** of the image, the **input, i**, that is the complete path to the training file, and the place were you will save the **model, m**, again the s3 path. Finally we can either **serve an endpoint**, or **batch-transform** (again, number of instances and type of instances can be provided). For both models this time you need to provide the whole model path, (model.tar.gz). For the former, you need to provide the endpoint name. For the latter, the place were the **output, o** will be saved and the **input, i** to predict. Split-type, strategy and content-type can also be provided.
+The **p** argument stands for the cloud provider and the **s** for the service. Be aware that the service needs to be a service provided by the cloud provider. You will need to name your app, for example testapp. Inside the created folder kindly add the train and serve logic, under the train.py and serve.py. Then you have to build the docker image, kindly add the requierements under the requierements file provided (be aware that if you pip freeze to add the requierements remove the odyssey library since it is not necessary), the **n** argument is optional and if not provided the name of the app will be used. Then you need to add **input/data/training** path under a given folder inside any wanted bucket, plus **model** and **output** folder (output only if considering multiple observations). Inside training, kindly provide the data for training. That is all you have to do inside s3, plus use **odyssey configure** that is only an aws configure implementation, for more information regarding IAM roles, please look under **Cloud Permissions**. Then push the docker image, after that you can train inside sagemaker, you can provide the **number, c** of instances and the **type, in** of instance, you will need to provide the **role**, the **name, n** of the image, the **input, i**, that is the complete path to the training file, and the place were you will save the **model, m**, again the s3 path. Finally we can either **serve an endpoint**, or **batch-transform** (again, number of instances and type of instances can be provided). For both models this time you need to provide the whole model path, (model.tar.gz). For the former, you need to provide the endpoint name. For the latter, the place were the **output, o** will be saved and the **input, i** to predict. Split-type, strategy and content-type can also be provided.
 
 
 ### Helpful commands
@@ -76,16 +78,44 @@ In the future **Odyssey** will include the option to upload your pickle models, 
 However, **you need to add** the serve logic. Where you need to think about the format of the current input of the data and the expected output. That expected output will be placed in the return statement. For example if that return file is a csv, due to expecting multiple observations you can return the data as pandas and odyssey will deal with the rest to convert to a csv. 
 
 
-### The rocket app
+### The rocket app (AWS Sagemaker)
 Odyssey creates one very important folder where all the magic happens: the **rocket** folder. You can modify it if necessary, you can always modify it and if you do not like the results (screw it) just create a new one. But is highly recommend you do not do it unless you know what your are doing. In a nutshell, you have a flask app called **predictor.py** that handle all the input and outputs, you have a **wsgi.py** and a **nginx.conf** files that the only proposed modifications are to completely remove (with the necessary modifications) and a **train** and **serve**. The latter call both respective files inside your created app. The files that continously can be modified are **predictor.py** and **serve**. In the former you can add more input types and output types, for example. In the latter you can have larger response times.
 **Again, it is strongly suggested not to modify anything, except for train.py and serve.py (outside of rocket), unless you know what you are doing**.
 
 
-### Examples
-Kindly visit our examples path to check how to implement odyssey for Sagemaker batch-transform and endpoint deployment.
+## AWS Serverless Lambda Functions
+Serverless functions have the goal of building agile applications to respond easily to changes. Managing the infraestructure is no longer necessary, you just have to worry about the code, serverless services have automatic scaling, high availability and pay for use. With this you can move faster, at your own rythm, with low-costs
 
 
-### Next Steps
-* Create test for locally, docker and cloud in sagemaker.
-* Improve Sagemaker endpoint (docker & architecture)
-* Train lambda locally .
+### Odyssey and Lambda
+You just need of 5 lines of tools. Initizaling the application, cloud provider **p** the same, but service **s** is now different, you have to specify **lambda**.
+Modify the dockerfile, add train and serve logic and **build** and **push** the application just as you would in aws sagemaker. You can provide the timeout and memory, both would be good to have high values, for example 59 seconds and 256MB, as the example below. You also need to spcify region, role and image name, this is different to the name of the app.
+
+It is very important you do not change the function parameters of application, once done that you can call odyssey train and odyssey serve to create respective functions, currently we do not have command lines to call the service.
+
+```
+$ pip install git+https://github.com/mauriciomani/odyssey.git
+$ odyssey init -p aws -s lambda start
+$ odyssey docker -n testlambda build
+$ odyssey docker -n testlambda push
+$ odyssey lambda -t 59 --memory 256 --region us_east_1 --role arn:aws:iam::__rolename__:role/lambda_role train --image lambda_image -n train
+$ odyssey lambda -t 59 --memory 256 --region us_east_1 --role arn:aws:iam::__rolename__:role/lambda_role --image lambda_image serve -n serve
+```
+
+## Examples
+Kindly visit our [examples path](examples) to check how to implement odyssey for Sagemaker batch-transform, endpoint deployment and serverless AWS lambda functions.
+
+
+## Next Steps
+* Create request cloud in sagemaker.
+* Improve Sagemaker endpoint (docker & architecture).
+* Add sagemaker possibility of hyperparameters.
+* Avoid using complete path on train.
+* Option to upload sagemaker model.
+* Train lambda locally.
+* Make sure roles are minimum.
+* Add airflow init.
+* Add Jenkins pipeline.
+* Add AWS EC2.
+* Price comparison for AWS products.
+* Agnostic tool, research Azure, and Google Cloud.
