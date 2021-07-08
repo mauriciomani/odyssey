@@ -23,10 +23,10 @@ class Generator():
         We keep the input/data/training; model; output currently.
         """
         self.app_name = input("1. Name of app: ")
-        if self.app_name.find("_"):
+        if self.app_name.find("_") >= 0:
             print("Strongly recommend to use '-' instead of '_'.")
             retry = input("Retry [Y/N]:[N] ")
-            if retry == None or retry == "N":
+            if retry == None or retry == "Y":
                 self.app_name = input("1. Name of app: ")
         os.mkdir(self.app_name)
         if self.provider == "aws":
@@ -54,11 +54,12 @@ class Generator():
                 #    self.model_path = '""'
                 self.generate_lambda_aws()
             elif self.service == "ec2":
-                pass
+                self.generate_ec2()
             else:
                 self.generate_sagemaker_aws()
         else:
             pass
+
 
     def generate_lambda_aws(self):
         """
@@ -100,6 +101,52 @@ class Generator():
 
         generate_app()
         generate_docker()
+        generate_requirements()
+
+    
+    def generate_ec2(self):
+        """
+        Generates all necessary files to create Flask app and inference file plus requirements.
+        """
+        # Try to keep it simple, do not decided to create a rocket app folder.
+        # Add train app
+        def create_flask_app():
+            """
+            Creates the flask app, not necessary to modify it.
+            """
+            # Probably we can inherit this. Always repeated.
+            script_name = "app.py"
+            save_path = os.path.join(self.app_name, script_name)
+            script = 'from flask import Flask\nfrom inference import Inference\n\napp = Flask(__name__)\n\n\n@app.route(\'/predict\', methods=["GET"])\ndef predict():\n    results = Inference(model_path="model").get()\n    return(results)\n\n\n# Difference between both methods by name, kindly change if necessary\n@app.route("/inference", methods=["POST"])\ndef inference():\n    results = Inference(model_path="model").post()\n    return(results)\n\n\nif __name__ == \'__main__\':\n    app.run()\n'
+            f = open(save_path, "w")
+            f.write(script)
+            f.close()
+
+        def create_inference():
+            """
+            Creates the inference application. Kindl
+            """
+            script_name = "inference.py"
+            save_path = os.path.join(self.app_name, script_name)
+            script = 'import pickle\nfrom flask import request\nfrom flask import jsonify, make_response\nimport os\n\n\n# All the commented lines shall be changed, unl ess making toy examples\n# Comments help, however recommend to remove it\n# Will not work unless you uncomment.\n\nclass Inference():\n    """\n    Class to make online inference for both methods post and get.\n    The former requieres json on body, the latter data on url.\n    Flask file do not need any change, unless you using other model_path\n    or want to change route names\n    """\n    def __init__(self, model_path="model"):\n        """\n        Input schema needs changes, since each variable will be extracted.\n        You can change the names given by the url through the keys.\n        Model name needs to be changed as well.\n        """\n        # Kindly add all variable to schema\n        # Change accoriding to /predict?var1=1&var2=2.0\n        # Extensively place all variables needed for prediction\n        self.input_schema = {"var1": {"default": 1,\n                                      "type": int},\n                             "var2": {"default": 2.0,\n                                      "type": float}}\n        self.data = {}\n        # Name of the model. Needs to be changed.\n        self.model_name = "model.pkl"\n        self.model = pickle.load(open(os.path.join(model_path, self.model_name), "rb"))\n\n    def get(self):\n        """\n        Performs a get by the arguments on the URL.\n        Commented lines are just a guide for predicting and returning.\n        """\n        for vals in self.input_schema.keys():\n            self.data[vals] = request.args.get(vals,\n                                               default=self.input_schema[vals]["default"],\n                                               type=self.input_schema[vals]["type"])\n\n        # Add all logic to predict values from URL\n        #value = self.model.predict([list(self.data.values())])\n        #value = str(value[0])\n        #json_value = jsonify({"score": value})\n        #return(json_value)\n\n\n    def post(self):\n        """\n        Performs a post that receives a json in the body.\n        According to the commented lines data key has a list\n        We return a json with key score and value, predicted value.\n        """\n        content = request.json\n        #data = content["data"]\n        #value = self.model.predict([data])\n        #value = str(value[0])\n        #json_value = jsonify({"score": value})\n        return(make_response(json_value, 200))\n\n\n# http://127.0.0.1:5000/predict?var1=1&var2=2.0 This for get\n# http://127.0.0.1:5000/inference This for post\n'
+            f = open(save_path, "w")
+            f.write(script)
+            f.close()
+
+        # I am reusing this
+        def generate_requirements():
+            """
+            Generate the requirements file
+            """
+            script_name = "requirements.txt"
+            save_path = os.path.join(self.app_name, script_name)
+            script = 'Flask>=1.1.2\ngunicorn>=20.1.0\n'
+            f = open(save_path, "w")
+            f.write(script)
+            f.close()
+
+        create_flask_app()
+        create_inference()
         generate_requirements()
 
 
