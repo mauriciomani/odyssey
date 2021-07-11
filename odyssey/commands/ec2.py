@@ -108,7 +108,8 @@ class CloudObject:
 @click.pass_context
 def cli(ctx):
     """
-    Create EC2 instance
+    Create EC2 instance. Everything is built under odyssey_app.
+    Any given name to the generated application will not be replicated.
     """
     if "app.py" in os.listdir() or "inference.py" in os.listdir() or "requirements.txt" in os.listdir():
         ctx.obj = CloudObject()
@@ -124,7 +125,8 @@ def cli(ctx):
 @click.pass_context
 def create_key(ctx, key_name):
     """
-    Creates the key to connect with the instance. key-name can be provided
+    Creates the key to connect with the instance. key-name can be provided instead.
+    This is mandatory for ssh connection, therefore por 22 has to be opened as well.
     """
     add_values_json("key_name", key_name)
     files = os.listdir()
@@ -164,7 +166,8 @@ def create_key(ctx, key_name):
 @click.pass_context
 def create_instance(ctx, min_count, max_count, instance_type, image):
     """
-    Extremely important to use create_key
+    Extremely important to use create_key command before or already have a pem file.
+    This is only useful for ubuntu machines.
     """
     ctx.obj.get_key_name()
     instances = ctx.obj.ec2.create_instances(ImageId=image,
@@ -187,8 +190,9 @@ def create_instance(ctx, min_count, max_count, instance_type, image):
 @click.pass_context
 def security_group(ctx):
     """
-    Open port 22 for SSH and port 80 for HTTP.
-    Both will be opened, if they already exist will throw an error.
+    Open both ports 22 for SSH and port 80 for HTTP.
+    Both will be opened, if either one already exists will throw an error.
+    Kindly do it manually under the security groups on EC2 dashboard.
     """
     ctx.obj.get_group_id()
     ctx.obj.get_public_dns()
@@ -233,6 +237,18 @@ def security_group(ctx):
               help="Name of the input. If None will be not transfered.")
 @click.pass_context
 def activate_instance(ctx, model, input_data):
+    """
+    Model can be transferred as well as input data,
+    you can use boto3 to read ec2 data, both the input and write the model.
+    We use gunicorn as web server gateway interface and unix as reverse proxy,
+    The former is a web server to forward requests to web applications.
+    The latter is a web server/inverse proxy. A proxy is an intermediary for requests from clients.
+    Works on behalf of clients when requesting service, this is instead of connecting directly.
+    A proxy first evaluates the request.
+    Without the importance of the app name we create inside the ec2 instance and odyssey_app folder.
+    A virtual enviroment is created and requirements are installed.
+    We activate gunicorn using daemon and nginx.
+    """
     ctx.obj.get_key_name()
     ctx.obj.get_public_dns()
     key = paramiko.RSAKey.from_private_key_file("{}.pem".format(ctx.obj.key_name))
@@ -245,13 +261,13 @@ def activate_instance(ctx, model, input_data):
         click.echo("Connected")
         ssh_client.exec_command("mkdir odyssey_app")
         click.echo("Making odyssey_app dir")
-        time.sleep(2)
+        time.sleep(1)
         ssh_client.exec_command("mkdir odyssey_app/model")
         click.echo("Making model dir")
-        time.sleep(2)
+        time.sleep(1)
         ssh_client.exec_command("mkdir odyssey_app/input")
         click.echo("Making input dir")
-        time.sleep(2)
+        time.sleep(1)
         ssh_client.exec_command("sudo apt-get update")
         click.echo("Update library")
         time.sleep(60)
@@ -262,9 +278,7 @@ def activate_instance(ctx, model, input_data):
         time.sleep(60)
         ssh_client.exec_command("python3 -m venv odyssey_app/venv")
         time.sleep(10)
-        #ssh_client.exec_command("source odyssey_app/venv/bin/activate")
         click.echo("Activating enviroment")
-        #time.sleep(5)
         with SCPClient(ssh_client.get_transport()) as scp:
             scp.put('app.py', 'odyssey_app/app.py')
             click.echo("Transfering app.py")
@@ -284,22 +298,32 @@ def activate_instance(ctx, model, input_data):
         print(output)
         time.sleep(120)
         click.echo("Requirements installed!")
-        #ssh_stdin, ssh_stdout, ssh_stderr = ssh_client.exec_command("sudo apt-get install nginx")
-        #ssh_stdin.write('Y\n')
-        #ssh_stdin.flush()
-        #output = ssh_stdout.read()
-        #time.sleep(60)
-        ssh_client.exec_command("""sudo bash -c 'echo "[Unit]\nDescription=Gunicorn instance for odyssey app\nAfter=network.target\n[Service]\nUser=ubuntu\nGroup=www-data\nWorkingDirectory=/home/ubuntu/odyssey_app\nExecStart=/home/ubuntu/odyssey_app/venv/bin/gunicorn -b localhost:8080 app:app\nRestart=always\n[Install]\nWantedBy=multi-user.target" > /etc/systemd/system/odyssey.service'""")
+        click.echo("Installing nginx...")
+        ssh_stdin, ssh_stdout, ssh_stderr = ssh_client.exec_command("sudo apt-get install nginx")
+        ssh_stdin.write('Y\n')
+        ssh_stdin.flush()
+        output = ssh_stdout.read()
+        print(output)
+        time.sleep(60)
+        click.echo("nginx installed")
+        ssh_client.exec_command("""sudo bash -c 'echo "[Unit]\nDescription=Gunicorn instance for odyssey app\nAfter=network.target\n[Service]\nUser=ubuntu\nGroup=www-data\nWorkingDirectory=/home/ubuntu/odyssey_app\nExecStart=/home/ubuntu/odyssey_app/venv/bin/gunicorn -b localhost:8000 app:app\nRestart=always\n[Install]\nWantedBy=multi-user.target" > /etc/systemd/system/odyssey.service'""")
         ssh_client.exec_command("sudo systemctl daemon-reload")
-        time.sleep(2)
+        time.sleep(1)
         ssh_client.exec_command("sudo systemctl start odyssey")
-        time.sleep(2)
+        time.sleep(1)
         ssh_client.exec_command("sudo systemctl enable odyssey")
-        time.sleep(2)
-        #ssh_client.exec_command("sudo systemctl start nginx")
-        #time.sleep(2)
-        #ssh_client.exec_command("sudo systemctl enable nginx")
-        #time.sleep(2)
+        time.sleep(1)
+        click.echo("Starting and enabling nginx...")
+        ssh_client.exec_command("sudo systemctl start nginx")
+        time.sleep(1)
+        ssh_client.exec_command("sudo systemctl enable nginx")
+        time.sleep(1)
+        ssh_client.exec_command("""sudo bash -c 'echo "upstream odyssey_app {\n    server 127.0.0.1:8000;\n}\n\nserver {\n        listen 80 default_server;\n        listen [::]:80 default_server;\n\n        root /var/www/html;\n\n        index index.html index.htm index.nginx-debian.html;\n\n        server_name _;\n\n        location / {\n                proxy_pass http://odyssey_app;\n        }\n}" > /etc/nginx/sites-available/odyssey_app'""")
+        ssh_client.exec_command("sudo rm /etc/nginx/sites-available/default")
+        ssh_client.exec_command("sudo rm /etc/nginx/sites-enabled/default")
+        ssh_client.exec_command("sudo ln -s /etc/nginx/sites-available/odyssey_app /etc/nginx/sites-enabled")
+        ssh_client.exec_command("sudo systemctl restart nginx")
+        click.echo("nginx restarted and ready")
         ssh_client.close()
         click.echo("Finished activating instance!")
     except Exception as e:

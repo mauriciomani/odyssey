@@ -8,7 +8,8 @@
 [![Package Status](https://img.shields.io/badge/status-dev-success)](https://github.com/mauriciomani/odyssey)
 
 <br>
-Odyssey makes super easy predicting either a single element or a whole file. We aim to be "cloud agnostic", however currently only working on Sagemaker (endpoint deployment and batch-transform) and working on improving serverless AWS lambda's.
+Odyssey is about making Machine Learning operations (MLOps) easier, you just need to create training and input-output logic and odyssey will deploy your already created model. It does not necessarily needs to be a model, it can be any rule that responds to certain input. In a nutshell, this project creates files when commands are passed inside your command line (terminal/bin bash shell), you just need to pip install and then you are ready to use odyssey inside the terminal. That will go from training to deploying and endpoint. Plus, odyssey also makes easier CI/CD, currently with Jenkins, and data pipelines with airflow. So odyssey can help you from data extraction to endpoint deployment.
+Odyssey makes super easy predicting either a single element or a whole file. We aim to be "cloud agnostic", however currently only working on Sagemaker (endpoint deployment and batch-transform) and working on improving serverless AWS lambda's and EC2.
 This is as simple as Cookiecooter command line file making, combined with AWS bring your own to easily deploy machine learning models. Yeah, we are a command line tool!
 <br>
 
@@ -102,6 +103,24 @@ $ odyssey lambda -t 59 --memory 256 --region us_east_1 --role arn:aws:iam::__rol
 $ odyssey lambda -t 59 --memory 256 --region us_east_1 --role arn:aws:iam::__rolename__:role/lambda_role --image lambda_image serve -n serve
 ```
 
+
+## AWS EC2
+Is the core of cloud computing. It is able to adapt to workload changes in automatic manner. Such that demand is matched as possible. The instance can adpot different server images, for example UBUNTU. Contrary to Sagemaker or Lambda functions we do need to build the architecture of the application, however odyssey does that using gunicorn and nginx.
+
+
+### Odyssey and EC2
+As well, creating an EC2 instance is very easy, the complicated stuff is on the inference file (the one that includes the logic you have to include), since it is the one that takes into account all the logic. You just need to create the odyssey application, create the instance and activate it. In addition, when created and activated the instance a json file is created to store information about the instance.
+
+```
+$ pip install git+https://github.com/mauriciomani/odyssey.git
+$ odyssey init -p aws -s ec2 start
+$ odyssey ec2 create-key
+$ odyssey ec2 create-instance --min-count 1 --max-count 1
+$ odyssey ec2 security-group
+$ odyssey ec2 activate-instance
+```
+
+
 ## Examples
 Kindly visit our [examples path](examples) to check how to implement odyssey for Sagemaker batch-transform, endpoint deployment and serverless AWS lambda functions.
 
@@ -116,6 +135,5 @@ Kindly visit our [examples path](examples) to check how to implement odyssey for
 * Make sure roles are minimum.
 * Add airflow init.
 * Add Jenkins pipeline.
-* Add AWS EC2.
 * Price comparison for AWS products.
 * Agnostic tool, research Azure, and Google Cloud.
